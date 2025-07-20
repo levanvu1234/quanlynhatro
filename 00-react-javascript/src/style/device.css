@@ -1,0 +1,37 @@
+.device-page-container {
+  padding: 50px;
+  background: linear-gradient(to bottom right, #e0f2ff, #f5faff);
+  min-height: 100vh;
+  border-radius: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.user-view-modal .ant-modal-content {
+  border-radius: 12px;
+  padding: 24px;
+  background-color: #f9fbff;
+}
+
+.user-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-item {
+  background-color: #e0f2fe;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.no-user {
+  font-style: italic;
+  color: #888;
+  padding: 12px;
+}
+

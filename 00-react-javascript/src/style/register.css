@@ -1,0 +1,28 @@
+.register-container {
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(to bottom right, #e0f2ff, #f5faff);
+  text-align: center;
+  align-items: center;
+  height: 100vh;
+  
+}
+
+.register-box {
+  padding: 40px 32px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+}
+
+.register-box h2 {
+  margin-bottom: 24px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+}
+
+

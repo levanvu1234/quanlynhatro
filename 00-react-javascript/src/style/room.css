@@ -1,0 +1,16 @@
+.room-page-container {
+  padding: 50px;
+  background: linear-gradient(to bottom right, #e0f2ff, #f5faff);
+  max-height: 100vh;
+  border-radius: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+
+
+
+
+
+
