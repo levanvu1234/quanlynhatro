@@ -8,7 +8,8 @@ import {
 import { Menu, Dropdown, Space } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/auth.context';
-
+import "../../style/global.css"
+import logo from "../../assets/R__2_-removebg-preview-removebg-preview.png"
 const PublicHeader = () => {
   const navigate = useNavigate();
   const { auth, setAuth } = useContext(AuthContext);
@@ -53,27 +54,38 @@ const PublicHeader = () => {
   return (
     <div
       style={{
-        backgroundColor: '#1e3a8a',
+        background: ' white',
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         height: 64,
-        color: 'white',
+        color: 'brown',
       }}
     >
       {/* Logo */}
-      <div style={{ flex: '0 0 auto' }}>
+       <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center' }}>
         <Link
           to="/"
           style={{
             fontWeight: 'bold',
             fontSize: 20,
-            color: 'white',
+            color: 'brown',
             textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
           }}
         >
-          🏠 NhaTroHD
+          {[logo].map((src) => (
+            <img
+              src={src} 
+              alt="logo"
+              style={{ height: '70px', width: 'auto' }}
+            />
+          ))}
+          
+          <span>NhaTroHD</span>
         </Link>
       </div>
 
@@ -96,7 +108,7 @@ const PublicHeader = () => {
       
       </Menu>
 
-      {/* Thông tin người dùng hoặc đăng nhập/đăng ký */}
+     
       <div style={{ flex: '0 0 auto' }}>
         <Menu
           theme="dark"
@@ -115,21 +127,23 @@ const PublicHeader = () => {
                  <div
                   style={{
                     cursor: 'pointer',
-                    color: 'white',
+                    color: 'brown',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
                   }}
                   >
                   <UserOutlined />
-                  <span>Xin chào, {auth.user.name}</span>
+                  <h3>Xin chào, {auth.user.name}</h3>
                   </div>
                 </Space>
               </a>
             </Dropdown>
           ) : (
-            <Menu.Item key="login">
-              <Link to="/admin">Đăng nhập</Link>
+            <Menu.Item key="login" style={{ 
+                    color: 'brown',
+                  }}>
+              <Link to="/login">Đăng nhập</Link>
             </Menu.Item>
           )}
         </Menu>

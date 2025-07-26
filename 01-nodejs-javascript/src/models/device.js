@@ -22,6 +22,11 @@ const deviceSchema = new mongoose.Schema({
   note: {
     type: String, // Ghi chú thêm nếu có
   },
+  activity: {
+    type: String,
+    enum: ['Hoạt động', 'Tạm dừng'],
+    default: 'Hoạt động',
+  },
 }, {
   timestamps: true, // tự động tạo createdAt và updatedAt
 });

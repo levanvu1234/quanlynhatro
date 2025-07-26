@@ -1,0 +1,79 @@
+/* buildingDetail.css */
+
+/* Container chính */
+.building-detail-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #fff;
+  
+}
+
+/* Ảnh chính */
+.main-image {
+  width: 100%;
+  height: 480px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Ảnh nhỏ bên phải */
+.thumb-image {
+  width: 100%;
+  height: 115px;
+  object-fit: cover;
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+.thumb-image:hover {
+  transform: scale(1.05);
+}
+
+
+/* Danh sách phòng */
+.room-carousel-wrapper {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.room-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 8px;
+  transition: box-shadow 0.3s ease;
+}
+.room-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+/* Ảnh phòng trong carousel */
+.room-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+
+/* Bộ sưu tập ảnh */
+.gallery-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,0.85);
+  z-index: 1000;
+  overflow: auto;
+}
+.gallery-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+.gallery-img:hover {
+  transform: scale(1.02);
+}

@@ -9,7 +9,9 @@ const monthlyBillService = {
   create: async (data) => {
     const room = await Room.findById(data.room).populate('building');
     if (!room || !room.building) throw new Error('Không tìm thấy phòng hoặc tòa nhà');
-
+    if (!room.users || room.users.length === 0) {
+      throw new Error('Phòng chưa có người thuê, không thể tạo hóa đơn');
+    }
     const building = room.building;
     const electricityPrice = building.electricityUnitPrice || 0;
     const waterPrice = building.waterUnitPrice || 0;
@@ -46,7 +48,9 @@ const monthlyBillService = {
     const room = existingBill.room;
     const building = room?.building;
     const roomPrice = room?.roomPrice || 0; // lấy từ room, không dùng data.roomPrice
-
+    if (!room.users || room.users.length === 0) {
+      throw new Error('Phòng chưa có người thuê, không thể cập nhật hóa đơn');
+    }
     // Lấy dữ liệu mới (ưu tiên data mới, fallback dùng cũ)
     const sodiencu = data.sodiencu ?? existingBill.sodiencu;
     const sodienmoi = data.sodienmoi ?? existingBill.sodienmoi;

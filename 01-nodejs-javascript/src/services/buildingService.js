@@ -11,7 +11,14 @@ const buildingService = {
 
   // Lấy tất cả tòa nhà
   getAllBuildings: async () => {
-    return await Building.find();
+    return await Building.find() 
+    .populate({
+          path: 'rooms',
+          populate: {
+            path: 'devices',
+            model: 'Device'  // Tên model của devices trong mongoose
+          }
+        });
   },
 
   // Lấy tòa nhà theo ID
@@ -32,9 +39,43 @@ const buildingService = {
   },
 
   // Xóa tòa nhà theo ID
-  deleteBuilding: async (id) => {
-    return await Building.findByIdAndDelete(id);
+  // Xóa tòa nhà (chuyển trạng thái sang "Tạm dừng")
+  deleteBuilding: async (id, deleteCode) => {
+    try {
+      const validDeleteCode = "123456";
+      if (deleteCode !== validDeleteCode) {
+        return {
+          EC: 1,
+          EM: "Mã xác thực không hợp lệ",
+        };
+      }
+
+      const building = await Building.findById(id);
+      if (!building) {
+        return {
+          EC: 2,
+          EM: "Không tìm thấy tòa nhà để xóa",
+        };
+      }
+
+      // Cập nhật trạng thái hoạt động
+      building.activity = "Tạm dừng";
+      await building.save();
+
+      return {
+        EC: 0,
+        EM: "Chuyển trạng thái tòa nhà thành 'Tạm dừng' thành công",
+        building,
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        EC: -1,
+        EM: "Lỗi server khi cập nhật trạng thái tòa nhà",
+      };
+    }
   },
+
 
   //  Thống kê doanh thu theo từng tòa nhà và từng tháng
   // Thống kê doanh thu theo từng tòa nhà và từng tháng

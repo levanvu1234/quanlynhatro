@@ -9,13 +9,15 @@ import {
   Select,
   Divider,
   message,
+  notification,
 } from 'antd';
-import { EditOutlined ,IdcardOutlined,PlusOutlined,DeleteOutlined} from '@ant-design/icons'; 
+import { EditOutlined ,IdcardOutlined,PlusOutlined,DeleteOutlined,RollbackOutlined} from '@ant-design/icons'; 
 import {
   GetDeviceApi,
   CreateDeviceApi,
   updateDeviceApi,
   GetRoomApi,
+  deleteDeviceApi,
 } from '../util/api';
 import '../style/device.css';
 import'../style/button.css';
@@ -28,11 +30,14 @@ const DevicePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
   const [form] = Form.useForm();
-    //lọc
-    const [filterRoom, setFilterRoom] = useState(null);
-    const [filterBuilding, setFilterBuilding] = useState(null);
-
+  //lọc
+  const [filterBuilding, setFilterBuilding] = useState(null);
+  const [filterCondition, setFilterCondition] = useState(null);
+  const [filterActivity, setFilterActivity] = useState("Hoạt động");
+  
   // Lấy danh sách thiết bị
+  // loadding
+  const [saving, setSaving] = useState(false);
   const fetchDevices = async () => {
     setLoading(true);
     try {
@@ -50,7 +55,6 @@ const DevicePage = () => {
   const fetchRooms = async () => {
   try {
     const res = await GetRoomApi(); // res là mảng trực tiếp
-    console.log("📦 ROOM DATA:", res); // ✅ sẽ thấy array nếu đúng
 
     if (Array.isArray(res)) {
       setRooms(res);
@@ -96,6 +100,7 @@ const DevicePage = () => {
   // Gửi form
   const handleSubmit = async () => {
     try {
+      setSaving(true); // Bắt đầu loading
       const values = await form.validateFields();
       if (!values.room) {
         message.error('Vui lòng chọn phòng');
@@ -116,19 +121,70 @@ const DevicePage = () => {
     } catch (error) {
       console.error(error);
       message.error('Có lỗi xảy ra khi lưu thiết bị');
+    }finally {
+        setSaving(false); // Dừng loading
+      }
+  };
+  const getFilteredDevices = () => {
+    return devices.filter(device => {
+      const buildingMatch = filterBuilding ? device.room?.building?._id === filterBuilding : true;
+      const conditionMatch = filterCondition ? device.condition === filterCondition : true;
+      const activityMatch = filterActivity ? device.activity === filterActivity : true;
+      return buildingMatch && conditionMatch && activityMatch;
+    });
+  };
+  const handleDelete = async (device) => {
+    Modal.confirm({
+      title: `Chuyển trạng thái thiết bị "${device.name}" sang "Tạm dừng"?`,
+      content: "Bạn có chắc chắn muốn tạm dừng hoạt động thiết bị này?",
+      okText: "Tạm dừng",
+      cancelText: "Hủy",
+      onOk: async () => {
+        const deleteCode = prompt("Nhập mã xác thực để tạm dừng:");
+        if (!deleteCode) return;
+
+        try {
+          const res = await deleteDeviceApi(device._id, deleteCode);
+
+          if (res?.EC === 0) {
+            message.success(res.EM || "Tạm dừng thành công");
+            fetchDevices();
+          } else {
+            message.error(res.EM || "Tạm dừng thất bại");
+          }
+        } catch (err) {
+          console.error("Lỗi tạm dừng device:", err);
+          message.error("Không thể tạm dừng thiết bị.");
+        }
+      },
+    });
+  };
+
+  const handleRestore = async (device) => {
+    try {
+      const res = await updateDeviceApi(device._id, {
+        activity: "Hoạt động",
+      });
+
+      if (res && res.success) {
+        notification.success({ message: "Khôi phục thiết bị thành công" });
+        fetchDevices();
+      } else {
+        notification.error({ message: "Khôi phục thất bại" });
+      }
+    } catch (err) {
+      console.error("Lỗi khôi phục user:", err);
+      notification.error({
+        message: "Lỗi hệ thống",
+        description: "Không thể khôi phục thiết bị.",
+      });
     }
   };
-    const getFilteredDevices = () => {
-    return devices.filter(device => {
-        const roomMatch = filterRoom ? device.room?._id === filterRoom : true;
-        const buildingMatch = filterBuilding ? device.room?.building?._id === filterBuilding : true;
-        return roomMatch && buildingMatch;
-    });
-    };
   const columns = [
     { title: 'Tên thiết bị', dataIndex: 'name', key: 'name' },
     { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
     { title: 'Tình trạng', dataIndex: 'condition', key: 'condition' },
+    { title: 'Trạng thái', dataIndex: 'activity', key: 'activity' },
     {
       title: 'Ghi chú',
       dataIndex: 'note',
@@ -146,20 +202,39 @@ const DevicePage = () => {
       render: (_, record) => record.room?.building?.name || 'Không có',
     },
     {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_, record) => (
-        <Button className="action-button edit"  onClick={() => handleOpenModal(record)} icon={<EditOutlined />}>
-          Chỉnh sửa
-        </Button>
-      ),
+      title: "Hành động",
+      render: (text, record) => {
+          return record.activity === "Tạm dừng" ? (
+            <Button
+              onClick={() => handleRestore(record)}
+              style={{ color: "green", borderColor: "green" }}
+              icon ={<RollbackOutlined />}
+            >
+              Hoàn tác
+            </Button>
+          ) : (
+            <>
+              <div style={{ display: "flex", gap: "8px" }}>    
+                <Button className="action-button edit"  onClick={() => handleOpenModal(record)} icon={<EditOutlined />}>
+                  Chỉnh sửa
+                </Button>
+                <Button
+                  icon={<DeleteOutlined />}
+                  danger
+                  onClick={() => handleDelete(record)}
+                >
+                Xóa
+                </Button>  
+              </div>
+            </>
+          )  
+      },
     },
   ];
 
   return (
     <div className="device-page-container">
-    <div
-        style={{
+     <div style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -181,23 +256,20 @@ const DevicePage = () => {
         {/* Bên phải: Bộ lọc */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Select
-            placeholder="Lọc theo phòng"
-            allowClear
-            style={{ width: 200 }}
-            value={filterRoom}
-            onChange={(value) => setFilterRoom(value)}
+              placeholder="Lọc theo tình trạng"
+              allowClear
+              style={{ width: 300 }}
+              value={filterCondition}
+              onChange={(value) => setFilterCondition(value)}
             >
-            {rooms.map((room) => (
-                <Option key={room._id} value={room._id}>
-                {room.name}
-                </Option>
-            ))}
+              <Option value="Tốt">Tốt</Option>
+              <Option value="Đang sửa">Đang sửa</Option>
+              <Option value="Hư hỏng">Hư hỏng</Option>
             </Select>
-
             <Select
             placeholder="Lọc theo tòa nhà"
             allowClear
-            style={{ width: 200 }}
+            style={{ width: 300 }}
             value={filterBuilding}
             onChange={(value) => setFilterBuilding(value)}
             >
@@ -213,17 +285,27 @@ const DevicePage = () => {
                 </Option>
             ))}
             </Select>
-
-            <Button
-            type="primary"
-            danger
-             icon={<DeleteOutlined />}
-            onClick={() => {
-                setFilterRoom(null);
-                setFilterBuilding(null);
-            }}
+            <Select
+              placeholder="Lọc theo trạng thái"
+              allowClear
+              style={{ width: 300 }}
+              value={filterActivity}
+              onChange={(value) => setFilterActivity(value)}
             >
-            Xóa lọc
+              <Option value="Hoạt động">Hoạt động</Option>
+              <Option value="Tạm dừng">Tạm dừng</Option>
+            </Select>
+            <Button
+              type="primary"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                setFilterBuilding(null);
+                setFilterCondition(null);
+                setFilterActivity(null);
+              }}
+            >
+              Xóa lọc
             </Button>
         </div>
     </div>
@@ -245,6 +327,7 @@ const DevicePage = () => {
         onOk={handleSubmit}
         title={editingDevice ? 'Chỉnh sửa thiết bị' : 'Thêm thiết bị'}
         okText={editingDevice ? 'Cập nhật' : 'Thêm'}
+        confirmLoading={saving} 
       >
         <Form layout="vertical" form={form}>
           <Form.Item

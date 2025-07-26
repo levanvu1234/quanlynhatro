@@ -39,15 +39,19 @@ const MonthlyBillPage = () => {
   const [filterRoom, setFilterRoom] = useState(undefined);
   const [filterMonth, setFilterMonth] = useState(undefined);
   const [filterYear, setFilterYear] = useState(undefined);
-
+  //loadding
+  const [loading, setLoading] = useState(false);
   const fetchBills = async () => {
     try {
+      setLoading(true);
       const res = await GetBillApi();
       if (Array.isArray(res)) {
         setDataSource(res);
       }
     } catch (err) {
       console.error("Lỗi khi lấy danh sách bill:", err);
+    }finally {
+      setLoading(false);
     }
   };
 
@@ -55,12 +59,15 @@ const MonthlyBillPage = () => {
     try {
       const res = await GetRoomApi();
       if (Array.isArray(res)) {
-        setRooms(res);
+        // Lọc chỉ lấy phòng có người dùng
+        const roomsWithUsers = res.filter(room => room.users && room.users.length > 0);
+        setRooms(roomsWithUsers);
       }
     } catch (err) {
       console.error("Lỗi khi lấy phòng:", err);
     }
   };
+
 
   useEffect(() => {
     fetchBills();
@@ -183,78 +190,90 @@ const MonthlyBillPage = () => {
 
   return (
     <div className="room-page-container">
+      <div style={{ marginBottom: 20 }}>
+      {/*  Tiêu đề và nút thêm */}
       <div style={{
-        marginBottom: 20,
         display: "flex",
         justifyContent: "space-between",
         flexWrap: "wrap",
         gap: 10,
+        marginBottom: 10,
       }}>
         <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-          <h2 style={{ color:'#1e3a8a',fontSize: '24px' }}>Quản lý hóa đơn</h2>
+          <h2 style={{ color:'#1e3a8a', fontSize: '24px' }}>Quản lý hóa đơn</h2>
           <Button className="add-button" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
             Thêm hóa đơn
           </Button>
-          <Input
-            placeholder="Tìm phòng hoặc tòa nhà"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 250 }}
-          />
-          <Select
-            placeholder="Lọc theo phòng"
-            allowClear
-            style={{ width: 180 }}
-            value={filterRoom}
-            onChange={(value) => setFilterRoom(value ?? undefined)}
-          >
-            {rooms.map((room) => (
-              <Select.Option key={room._id} value={room._id}>
-                {room.name} ({room.building?.name || "?"})
-              </Select.Option>
-            ))}
-          </Select>
-          <Select
-            placeholder="Lọc theo tháng"
-            allowClear
-            style={{ width: 150 }}
-            value={filterMonth}
-            onChange={(value) => setFilterMonth(value ?? undefined)}
-          >
-            {[...Array(12)].map((_, i) => (
-              <Select.Option key={i + 1} value={i + 1}>
-                Tháng {i + 1}
-              </Select.Option>
-            ))}
-          </Select>
-          <Select
-            placeholder="Lọc theo năm"
-            allowClear
-            style={{ width: 150 }}
-            value={filterYear}
-            onChange={(value) => setFilterYear(value ?? undefined)}
-          >
-            {[...new Set(dataSource.map((bill) => bill.year))].map((year) => (
-              <Select.Option key={year} value={year}>
-                Năm {year}
-              </Select.Option>
-            ))}
-          </Select>
-          <Button
-            type="primary"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => {
-              setSearchText("");
-              setFilterRoom(undefined);
-              setFilterMonth(undefined);
-              setFilterYear(undefined);
-            }}
-          >
-            Xóa lọc
-          </Button>
         </div>
       </div>
+
+      {/*  Tìm kiếm và lọc */}
+      <div style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 10,
+      }}>
+        <Input
+          placeholder="Tìm phòng hoặc tòa nhà"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 250 }}
+        />
+        <Select
+          placeholder="Lọc theo phòng"
+          allowClear
+          style={{ width: 180 }}
+          value={filterRoom}
+          onChange={(value) => setFilterRoom(value ?? undefined)}
+        >
+          {rooms.map((room) => (
+            <Select.Option key={room._id} value={room._id}>
+              {room.name} ({room.building?.name || "?"})
+            </Select.Option>
+          ))}
+        </Select>
+        <Select
+          placeholder="Lọc theo tháng"
+          allowClear
+          style={{ width: 150 }}
+          value={filterMonth}
+          onChange={(value) => setFilterMonth(value ?? undefined)}
+        >
+          {[...Array(12)].map((_, i) => (
+            <Select.Option key={i + 1} value={i + 1}>
+              Tháng {i + 1}
+            </Select.Option>
+          ))}
+        </Select>
+        <Select
+          placeholder="Lọc theo năm"
+          allowClear
+          style={{ width: 150 }}
+          value={filterYear}
+          onChange={(value) => setFilterYear(value ?? undefined)}
+        >
+          {[...new Set(dataSource.map((bill) => bill.year))].map((year) => (
+            <Select.Option key={year} value={year}>
+              Năm {year}
+            </Select.Option>
+          ))}
+        </Select>
+        <Button
+          type="primary"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => {
+            setSearchText("");
+            setFilterRoom(undefined);
+            setFilterMonth(undefined);
+            setFilterYear(undefined);
+          }}
+        >
+          Xóa lọc
+        </Button>
+      </div>
+    </div>
+
 
       <Modal
         title={editingBill ? "Sửa hóa đơn" : "Thêm hóa đơn mới"}
@@ -283,7 +302,7 @@ const MonthlyBillPage = () => {
             >
               {rooms.map((room) => (
                 <Select.Option key={room._id} value={room._id}>
-                  {room.name} ({room.building?.name || "?"})
+                  {room.name} ({room.building?.name || "?"}) - {room.users[0]?.name || 'Người thuê'}
                 </Select.Option>
               ))}
             </Select>
@@ -326,6 +345,7 @@ const MonthlyBillPage = () => {
         rowKey="_id"
         pagination={{ pageSize: 5 }}
         bordered
+        loading={loading}
       />
     </div>
   );

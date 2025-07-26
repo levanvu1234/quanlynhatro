@@ -24,7 +24,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { AuthWrapper } from './component/context/auth.context.jsx'
-
+import PrivateRoute from './component/context/PrivateRoute.jsx'
 
 const router = createBrowserRouter([
    {
@@ -33,7 +33,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/dashboard",
-    element: <App />,
+    element: (
+      <PrivateRoute allowedRoles={['Admin']}>
+        <App />
+      </PrivateRoute>
+    ),
     children: [
       {
         index : true,

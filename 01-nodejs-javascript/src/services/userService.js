@@ -10,8 +10,12 @@ const createUserService = async (name,email,phonenumber,activity,password) => {
         //kiem tra co lap phonenumber khong 
         const user = await User.findOne({phonenumber}); // neu can kiem tra da ton tai chi phonenumber maf khong can gan mot gia trij vd nhu Email1
         if(user) {
-            console.log(`Số điện thoại trung da ton tai, vui long chon so dien thoai khac ${phonenumber} `)
-            return null;
+            console.log(`Số điện thoại trung da ton tai, vui long chon so dien thoai khac ${phonenumber} `)   
+            return {
+                EC: 1,
+                EM: `Số điện thoại ${phonenumber} đã được đăng ký`,
+            };
+             
         }
         //ma hoa mat khau
         const hashPassword = await bcrypt.hash(password, saltRounds)
@@ -25,11 +29,18 @@ const createUserService = async (name,email,phonenumber,activity,password) => {
             activity: activity,
 
         })
-        return result;
+        return {
+            EC: 0,
+            EM: "Đăng ký thành công",
+            result: result,
+        };
 
     } catch (error) {
         console.log(error);
-        return null;
+        return {
+            EC: -1,
+            EM: "Lỗi máy chủ",
+        };
     }
 }
 
@@ -87,7 +98,7 @@ const LoginService = async (phonenumber1,password) => {
 }
 const GetUserService = async () => {
   try {
-    const result = await User.find()
+    const result = await User.find()// chỉ lấy người đang hoạt động
     .select("-password")
     .populate({
         path: "rooms",
@@ -165,6 +176,69 @@ const updateUserService = async (id, updatedData) => {
         };
     }
 };
+const deleteUserService = async (id, deleteCode) => {
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return {
+        EC: 2,
+        EM: "Người dùng không tồn tại",
+      };
+    }
+
+    // Kiểm tra mã xác nhận xóa (giả sử mã đúng là "123456")
+    if (deleteCode !== "123456") {
+      return {
+        EC: 1,
+        EM: "Mã xác nhận không đúng",
+      };
+    }
+
+    user.condition = "Không hoạt động";
+    await user.save();
+
+    return {
+      EC: 0,
+      EM: "Người dùng đã được chuyển sang trạng thái không hoạt động",
+      user,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      EC: -1,
+      EM: "Lỗi server",
+    };
+  }
+};
+const restoreUserService = async (id) => {
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return {
+        EC: 2,
+        EM: "Người dùng không tồn tại",
+      };
+    }
+
+    user.condition = "Hoạt động";
+    await user.save();
+
+    return {
+      EC: 0,
+      EM: "Người dùng đã được khôi phục trạng thái hoạt động",
+      user,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      EC: -1,
+      EM: "Lỗi server",
+    };
+  }
+};
+
+
+
 module.exports = {
-    createUserService, LoginService ,GetUserService,updateUserService,getUserByIdService
+    createUserService, LoginService ,GetUserService,updateUserService,getUserByIdService,deleteUserService,restoreUserService
 }

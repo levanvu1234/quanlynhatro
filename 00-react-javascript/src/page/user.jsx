@@ -3,24 +3,37 @@ import { useEffect, useState } from "react";
 import {
   GetUserApi,
   updateUserApi,
-  createUserApi
+  createUserApi,
+  deleteUserApi,
+  restoreUserApi,
 } from "../util/api";
 import "../style/userpage.css";
 import "../style/button.css";
-import { EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { EditOutlined, PlusOutlined ,DeleteOutlined,RollbackOutlined } from "@ant-design/icons";
 
 const UserPage = () => {
   const [dataSource, setDataSource] = useState([]);
+  //modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isAddMode, setIsAddMode] = useState(false);
+  //search
   const [searchText, setSearchText] = useState("");
   const [filteredData, setFilteredData] = useState([]);
   const [form] = Form.useForm();
-
+  const [statusFilter, setStatusFilter] = useState("Hoạt động");
+  //loading
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  //xóa
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleteForm] = Form.useForm();
   const fetchUser = async () => {
     try {
+      setLoading(true);
       const usersRes = await GetUserApi();
+
       if (!Array.isArray(usersRes)) {
         return notification.error({
           message: "Lỗi khi tải dữ liệu",
@@ -40,16 +53,24 @@ const UserPage = () => {
             : "Không ở tòa nào",
       }));
 
+      const activeUsers =
+        statusFilter && statusFilter !== "tất cả"
+          ? updatedUsers.filter((user) => user.condition === statusFilter)
+          : updatedUsers;
+
       setDataSource(updatedUsers);
-      setFilteredData(updatedUsers);
+      setFilteredData(activeUsers);
     } catch (err) {
       console.error("Lỗi fetchUser:", err);
       notification.error({
         message: "Lỗi hệ thống",
         description: "Không thể tải dữ liệu người dùng.",
       });
+    } finally {
+      setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchUser();
@@ -78,6 +99,7 @@ const UserPage = () => {
 
   const handleSubmit = async () => {
     try {
+      setSaving(true); // Bắt đầu loading
       const values = await form.validateFields();
 
       if (!isAddMode && currentUser) {
@@ -107,14 +129,67 @@ const UserPage = () => {
       fetchUser();
     } catch (err) {
       console.error("Lỗi xử lý form:", err);
+    }finally {
+        setSaving(false); // Dừng loading
+      }
+  };
+  //xóa
+  const handleDelete = (record) => {
+    setUserToDelete(record);
+    deleteForm.resetFields();
+    setIsDeleteModalOpen(true);
+  };
+  const confirmDelete = async () => {
+    try {
+      const values = await deleteForm.validateFields();
+      const res = await deleteUserApi(userToDelete._id, values.deleteCode);
+
+      if (res.EC === 0) {
+        notification.success({ message: "Xóa người dùng thành công!" });
+        fetchUser();
+      } else {
+        notification.error({ message: res.EM || "Xóa thất bại!" });
+      }
+
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      console.error("Lỗi xác nhận xóa:", err);
+    }
+  };
+  const handleRestore = async (id) => {
+    try {
+      const response = await restoreUserApi(id);
+      console.log("Restore response: ", response);
+
+      if (response && response.EC === 0) {
+        notification.success({
+          message: "Khôi phục thành công!",
+          description: response.EM,
+        });
+        fetchUser();
+      } else {
+        // Nếu EC !== 0 hoặc có status 500 thì báo lỗi
+        notification.error({
+          message: "Khôi phục thất bại!",
+          description: response?.EM || "Có lỗi xảy ra",
+        });
+      }
+    } catch (error) {
+      console.log("Lỗi catch:", error);
+      notification.error({
+        message: "Lỗi khôi phục!",
+        description:
+          error?.response?.data?.EM || error?.message || "Lỗi không xác định",
+      });
     }
   };
 
+
+
+
+
+
   const columns = [
-    {
-      title: "Id",
-      dataIndex: "_id",
-    },
     {
       title: "Tên",
       dataIndex: "name",
@@ -153,19 +228,65 @@ const UserPage = () => {
       dataIndex: "phonenumber",
     },
     {
-      title: "Hành động",
-      render: (text, record) => (
-        <>
-          <Button
-            className="action-button edit"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Chỉnh sửa
-          </Button>
-        </>
-      ),
+      title: "Trạng thái",
+      dataIndex: "condition",
+      filters: [
+        { text: "Hoạt động", value: "Hoạt động" },
+        { text: "Không hoạt động", value: "Không hoạt động" },
+        { text: "Tất cả", value: "tất cả" },
+      ],
+      filteredValue: statusFilter ? [statusFilter] : null,
+      onFilter: (value, record) => {
+        if (value === "tất cả") return true; // Không lọc gì cả
+        return record.condition === value;
+      },
+      render: (text) =>
+        text === "Không hoạt động" ? (
+          <span style={{ color: "red" }}>Không hoạt động</span>
+        ) : (
+          <span style={{ color: "green" }}>Hoạt động</span>
+        ),
     },
+
+
+    {
+      title: "Hành động",
+      render: (text, record) => {
+        if (record.condition === "Không hoạt động") {
+          return (
+            <Button
+              type="default"
+              icon={<RollbackOutlined />}
+              style={{ color: "green", borderColor: "green" }}
+              onClick={() => handleRestore(record._id)}
+            >
+              Hoàn tác
+            </Button>
+          );
+        }
+
+        return (
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button
+              className="action-button edit"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Chỉnh sửa
+            </Button>
+            <Button
+              icon={<DeleteOutlined />}
+              danger
+              onClick={() => handleDelete(record)}
+            >
+              Xóa
+            </Button>
+          </div>
+        );
+      },
+    }
+
+
   ];
 
   return (
@@ -200,6 +321,18 @@ const UserPage = () => {
         columns={columns}
         rowKey={"_id"}
         pagination={{ pageSize: 5 }}
+        loading={loading}
+        onChange={(pagination, filters) => {
+          const condition = filters.condition?.[0] || null;
+          setStatusFilter(condition);
+          let filtered = dataSource;
+
+          if (condition && condition !== "tất cả") {
+            filtered = dataSource.filter((user) => user.condition === condition);
+          }
+
+          setFilteredData(filtered);
+        }}
       />
 
       {/* Modal thêm / sửa */}
@@ -210,6 +343,7 @@ const UserPage = () => {
         onOk={handleSubmit}
         okText={isAddMode ? "Tạo mới" : "Lưu"}
         cancelText="Hủy"
+        confirmLoading={saving} 
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -263,6 +397,29 @@ const UserPage = () => {
           </Form.Item>
         </Form>
       </Modal>
+      <Modal
+          title="Xác nhận xóa người dùng"
+          open={isDeleteModalOpen}
+          onCancel={() => setIsDeleteModalOpen(false)}
+          onOk={confirmDelete}
+          okText="Xóa"
+          cancelText="Hủy"
+        >
+        <p>
+          Bạn có chắc muốn xóa người dùng{" "}
+          <b>{userToDelete?.name}</b>?
+        </p>
+        <Form form={deleteForm} layout="vertical">
+          <Form.Item
+            label="Mã xác nhận"
+            name="deleteCode"
+            rules={[{ required: true, message: "Vui lòng nhập mã xác nhận!" }]}
+          >
+            <Input.Password placeholder="Ví dụ: 123456" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
     </div>
   );
 };

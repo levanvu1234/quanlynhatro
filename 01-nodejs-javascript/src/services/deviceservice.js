@@ -72,8 +72,30 @@ const deviceService = {
       }
   },
 
-  deleteDevice: async (id) => {
-    return await Device.findByIdAndDelete(id)
+  deleteDevice: async (id, deleteCode) => {
+    try {
+      const validDeleteCode = "123456";
+      if (deleteCode !== validDeleteCode) {
+        return {
+          EC: 1,
+          EM: "Mã xác thực không hợp lệ",
+        };
+      }
+
+      const device = await Device.findById(id);
+      if (!device) {
+        return {
+          EC: 2,
+          EM: "Không tìm thấy thiết bị để xóa",
+        };
+      }
+
+      // Cập nhật trạng thái thiết bị
+      device.activity = "Tạm dừng";
+      await device.save();
+
+      // Populate lại để trả về đầy đủ thông tin
+      const populatedDevice = await Device.findById(device._id)
       .populate({
         path: 'room',
         select: 'name building',
@@ -82,7 +104,21 @@ const deviceService = {
           select: 'name address'
         }
       });
-  }
+
+      return {
+        EC: 0,
+        EM: "Chuyển trạng thái thiết bị thành 'Tạm dừng' thành công",
+        data: populatedDevice,
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        EC: -1,
+        EM: "Lỗi server khi cập nhật trạng thái thiết bị",
+      };
+    }
+  },
+
 };
 
 module.exports = deviceService;

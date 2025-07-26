@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser,HandleLogin ,GetUser,GetAccount,updateUser,getUserById} = require('../controllers/usercontroller');
+const { createUser,HandleLogin ,GetUser,GetAccount,updateUser,getUserById,deleteUser,restoreUser} = require('../controllers/usercontroller');
 const roomController = require('../controllers/roomController'); 
 const buildingController = require('../controllers/buildingController'); 
 const monthlyBillController = require('../controllers/monthlybillController');
@@ -22,6 +22,7 @@ routerAPI.post("/building", uploadBuildingImages.array('images', 10), buildingCo
 routerAPI.put("/building/:id", uploadBuildingImages.array('images', 10), buildingController.update);
 routerAPI.get("/building/report/revenue", buildingController.getRevenue);
 routerAPI.get("/building/:id", buildingController.getById);
+routerAPI.delete('/building/:id', buildingController.delete);
 //booking
 routerAPI.post('/booking', bookingController.createBooking);
 routerAPI.get('/booking', bookingController.getAllBookings); 
@@ -38,7 +39,8 @@ routerAPI.get("/user", GetUser)
 routerAPI.get("/account", GetAccount)
 routerAPI.put("/users/:id", updateUser);
 routerAPI.get('/user/:id', getUserById);
-
+routerAPI.delete('/user/:id', deleteUser);
+routerAPI.patch("/user/restore/:id", restoreUser);
 
 //bill
 routerAPI.get('/bill', monthlyBillController.getAll);
@@ -49,6 +51,6 @@ routerAPI.put("/bill/:id", monthlyBillController.update);
 routerAPI.post('/device', deviceController.create);
 routerAPI.get('/device', deviceController.getAll);
 routerAPI.put('/device/:id', deviceController.update);
-
+routerAPI.delete('/device/:id', deviceController.delete);
 
 module.exports = routerAPI; //export default

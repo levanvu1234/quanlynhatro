@@ -32,6 +32,8 @@ const formatRoom = (room) => ({
     _id: room.building?._id,
     name: room.building?.name || 'Chưa gán tòa nhà',
     location: room.building?.location || 'Chưa gán',
+    electricityUnitPrice:room.building?.electricityUnitPrice || "",
+    waterUnitPrice:room.building?.waterUnitPrice,
   },
   users: (room.users || []).map(user => ({
     _id: user._id,
@@ -39,12 +41,15 @@ const formatRoom = (room) => ({
     email: user.email,
     phonenumber: user.phonenumber
   })),
-  devices: (room.devices || []).map(device => ({
-    _id: device._id,
-    name: device.name,
-    quantity: device.quantity,
-    condition: device.condition,
-    note: device.note
+   devices: room.devices
+    ?.filter((device) => device.activity !== "Tạm dừng")
+    ?.map((device) => ({
+      _id: device._id,
+      name: device.name,
+      status: device.status,
+      note: device.note,
+      quantity: device.quantity,
+      condition: device.condition,
   })),
   startDate: room.startDate,
   endDate: room.endDate,
@@ -120,49 +125,59 @@ const roomController = {
       res.status(500).json({ error: err.message });
     }
   },
-
+  
   // Cập nhật phòng
-  update: async (req, res) => {
-    try {
-      console.log('Update room req.body:', req.body);
-      const roomId = req.params.id;
-      let roomData = req.body;
+  // Cập nhật phòng
+update: async (req, res) => {
+  try {
+    console.log('Update room req.body:', req.body);
+    const roomId = req.params.id;
+    let roomData = req.body;
 
-      const room = await roomService.getRoomById(roomId);
-      if (!room) return res.status(404).json({ message: "Room not found" });
+    const room = await roomService.getRoomById(roomId);
+    if (!room) return res.status(404).json({ message: "Room not found" });
 
-      roomData.users = parseUsers(req.body.users);
-      roomData.roomPrice = parseFloat(req.body.roomPrice) || room.roomPrice;
-      roomData.area = parseFloat(req.body.area) || room.area;
-      if (req.body.startDate === "") {
-        roomData.startDate = null;
-      } else if (req.body.startDate) {
-        roomData.startDate = new Date(req.body.startDate);
-      } else {
-        roomData.startDate = room.startDate;
+    // Parse thông tin người dùng
+    roomData.users = parseUsers(req.body.users);
+    roomData.roomPrice = parseFloat(req.body.roomPrice) || room.roomPrice;
+    roomData.area = parseFloat(req.body.area) || room.area;
+
+    // Parse ngày bắt đầu và kết thúc
+    roomData.startDate = req.body.startDate === ""
+      ? null
+      : (req.body.startDate ? new Date(req.body.startDate) : room.startDate);
+
+    roomData.endDate = req.body.endDate === ""
+      ? null
+      : (req.body.endDate ? new Date(req.body.endDate) : room.endDate);
+
+    const files = req.files || [];
+
+    //  XỬ LÝ XÓA ẢNH 
+    const deletedImages = JSON.parse(req.body.deletedImages || '[]');
+    for (const imagePath of deletedImages) {
+      const fullPath = path.resolve(__dirname, '../uploads', imagePath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
       }
-
-      if (req.body.endDate === "") {
-        roomData.endDate = null;
-      } else if (req.body.endDate) {
-        roomData.endDate = new Date(req.body.endDate);
-      } else {
-        roomData.endDate = room.endDate;
-      }
-      const files = req.files || [];
-
-      if (files.length > 0) {
-        const imagePaths = files.map(f => `rooms/${roomId}/${f.filename}`);
-        roomData.images = [...(room.images || []), ...imagePaths];
-      }
-
-      const updatedRoom = await roomService.updateRoom(roomId, roomData);
-      res.json(formatRoom(updatedRoom));
-    } catch (err) {
-      console.error("Update Room Error:", err);
-      res.status(500).json({ error: err.message });
     }
-  },
+
+    //  GỘP ẢNH MỚI (nếu có) 
+    const newImagePaths = files.map(f => `rooms/${roomId}/${f.filename}`);
+    roomData.images = [
+      ...(room.images || []).filter(img => !deletedImages.includes(img)),
+      ...newImagePaths
+    ];
+
+    //  Gọi cập nhật
+    const updatedRoom = await roomService.updateRoom(roomId, roomData);
+    res.json(formatRoom(updatedRoom));
+  } catch (err) {
+    console.error("Update Room Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+},
+
 
   // Xoá phòng
   delete: async (req, res) => {

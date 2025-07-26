@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Spin, Card, message, List } from 'antd';
-import { GetUserByIdApi } from '../../util/api'; // Đường dẫn API đúng
+import { Spin, Card, message, List, Row, Col, Descriptions, Divider, Typography } from 'antd';
+import { GetUserByIdApi } from '../../util/api';
+import '../../style/userdetail.css'
+const { Title } = Typography;
 
 const UserDetailPage = () => {
   const { id } = useParams();
@@ -38,20 +40,20 @@ const UserDetailPage = () => {
     return <p>Không tìm thấy thông tin người dùng.</p>;
   }
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
   return (
-    <Card title={`Chi tiết người dùng: ${user.name}`}>
+  <div style={{ position: 'relative', padding: 24 }}>
+    <div className="rotate-shape"></div>
+    <div className="rotate-square"></div>
+
+    <Card
+      title={`Chi tiết người dùng: ${user.name}`}
+      style={{ position: 'relative', zIndex: 1 }}
+    >
       <p><strong>ID:</strong> {user._id}</p>
       <p><strong>Tên:</strong> {user.name}</p>
       <p><strong>Số điện thoại:</strong> {user.phonenumber}</p>
       <p><strong>Email:</strong> {user.email}</p>
       <p><strong>Vai trò:</strong> {user.role}</p>
-      <p><strong>Schedule:</strong> {formatDate(user.schedule)}</p>
 
       <p><strong>Phòng thuê:</strong></p>
       {user.rooms && user.rooms.length > 0 ? (
@@ -72,7 +74,9 @@ const UserDetailPage = () => {
         <p>Không có phòng nào</p>
       )}
     </Card>
-  );
+  </div>
+);
+
 };
 
 export default UserDetailPage;

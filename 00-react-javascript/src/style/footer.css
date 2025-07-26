@@ -1,11 +1,12 @@
 .footer {
-  background-color: #f8f9fa;
+  background: linear-gradient(to bottom right, #e0f2ff, #f5faff);
   padding: 40px 24px 20px 24px;
   color: #333;
   font-size: 14px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
 }
 
 .footer-top {
@@ -18,12 +19,15 @@
 
 .footer-logo-slogan {
   flex: 1 1 300px;
-  img {
-    max-width: 150px;
-    margin-bottom: 12px;
-  }
+  display: flex;
+  flex-direction: column; 
+  align-items: flex-start;
+  
 }
-
+.footer-logo-slogan img {
+  max-width: 150px;
+  margin-bottom: 12px;
+}
 .footer-links h4 {
   font-weight: 600;
   margin-bottom: 12px;

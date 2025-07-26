@@ -27,6 +27,18 @@ const GetUserByIdApi = (id) => {
   const URL_API = `/v1/api/user/${id}`;
   return axios.get(URL_API);
 };
+const deleteUserApi = (id, deleteCode) => {
+  const URL_API = `/v1/api/user/${id}`;
+  return axios.delete(URL_API, {
+    data: {
+      deleteCode,
+    },
+  });
+};
+const restoreUserApi = (id) => {
+  const URL_API = `/v1/api/user/restore/${id}`;
+  return axios.patch(URL_API);
+};
 //room
 const GetRoomApi=() =>{
     const URL_API="/v1/api/room";
@@ -74,6 +86,14 @@ const GetBuildingByIdApi=(id) => {
   const URL_API = `/v1/api/building/${id}`;
    return axios.get(URL_API)
 };
+const deleteBuildingApi = (id, deleteCode) => {
+  const URL_API = `/v1/api/building/${id}`;
+  return axios.delete(URL_API, {
+    data: {
+      deleteCode,
+    },
+  });
+};
 //bill
 const GetBillApi=() =>{
     const URL_API="/v1/api/bill";
@@ -95,6 +115,7 @@ const PrintBillPdfApi = async (billId) => {
     
   });
 };
+// thiết bị
 const GetDeviceApi = (roomId) => {
   const URL_API = "/v1/api/device";
   return axios.get(URL_API, { params: { roomId } });
@@ -109,6 +130,14 @@ const updateDeviceApi = (id, updatedData) => {
 };
 const GetDeviceByRoomApi = (roomId) => {
   return axios.get(`/v1/api/device/room/${roomId}`);
+};
+const deleteDeviceApi = (id, deleteCode) => {
+  const URL_API = `/v1/api/device/${id}`;
+  return axios.delete(URL_API, {
+    data: {
+      deleteCode,
+    },
+  });
 };
 //booking
 const GetBookingsApi = () => {
@@ -125,11 +154,11 @@ const UpdateBookingStatusApi = (id, data) => {
 };
 
 export{ //thay vi dung export default thi dung nhu nay de xuat ra nhieu function(api)
-    createUserApi,LoginApi,GetUserApi,updateUserApi,GetUserByIdApi,
+    createUserApi,LoginApi,GetUserApi,updateUserApi,GetUserByIdApi,deleteUserApi ,restoreUserApi,
     GetRoomApi,CreateRoomApi,updateRoomApi,GetRoomByIdApi,
-    GetBuildingApi, CreateBuildingApi,GetBuildingRevenueApi,updateBuildingApi,GetBuildingByIdApi,
+    GetBuildingApi, CreateBuildingApi,GetBuildingRevenueApi,updateBuildingApi,GetBuildingByIdApi,deleteBuildingApi,
     GetBillApi,CreateBillgApi,updateBillApi,PrintBillPdfApi,
-    GetDeviceApi,CreateDeviceApi,updateDeviceApi,GetDeviceByRoomApi,
+    GetDeviceApi,CreateDeviceApi,updateDeviceApi,GetDeviceByRoomApi,deleteDeviceApi,
     GetBookingsApi,CreateBookingApi,UpdateBookingStatusApi,
 
 }

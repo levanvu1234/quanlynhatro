@@ -6,25 +6,33 @@ import '../style/register.css';
 import { Link } from 'react-router-dom'; // Import your CSS styles
 const RegisterPage = () => {
     const navigate =useNavigate();
-    const onFinish = async(values) => {
-        const { name, email,phonenumber, password} =values;
-        const res = await createUserApi(name, email,phonenumber, password);
+    const onFinish = async (values) => {
+        const { name, email, phonenumber, password } = values;
 
-        if(res){
-            notification.success({
-                message: "CREATE USER",
-                desciption: "Successful"
-            })
-            navigate("/login")
-        }else{
+        try {
+            const res = await createUserApi(name, email, phonenumber, password);
+
+            if (res.EC === 0) {
+                notification.success({
+                    message: "Đăng ký thành công",
+                    description: res.EM || "Tài khoản đã được tạo.",
+                });
+                navigate("/login");
+            } else {
+                notification.error({
+                    message: "Lỗi đăng ký",
+                    description: res.EM || "Không thể tạo tài khoản.",
+                });
+            }
+        } catch (error) {
             notification.error({
-                message: "CREATE USER",
-                desciption: "Eror"
-            })
+                message: "Lỗi hệ thống",
+                description: error.response?.data?.EM || "Không thể kết nối đến máy chủ.",
+            });
         }
     };
     const onFinishFailed = errorInfo => {
-    console.log('Failed:', errorInfo);
+        console.log('Failed:', errorInfo);
     };
     return(
         <div className="register-container">
@@ -82,7 +90,7 @@ const RegisterPage = () => {
                     </Button>
                 </Form.Item>
                 <div style={{ textAlign: 'center', marginTop: 8 }}>
-                    Bạn đã có tài khoản? <Link to="/admin">Đăng nhập tại đây</Link>
+                    Bạn đã có tài khoản? <Link to="/login">Đăng nhập tại đây</Link>
                 </div>
             </Form>
             </div>

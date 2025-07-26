@@ -75,7 +75,7 @@ const Sidebar = () => {
               <span
                 onClick={() => {
                   localStorage.clear('access_token');
-                  navigate('/admin');
+                  navigate('/dashboard');
                   setAuth({
                     isAuthenticated: false,
                     user: { phonenumber: '', name: '' ,role: '', _id: '',},
@@ -92,7 +92,7 @@ const Sidebar = () => {
         ]
       : [
           {
-            label: <Link to="/admin">Đăng nhập</Link>,
+            label: <Link to="/login">Đăng nhập</Link>,
             key: 'login',
             icon: <SettingOutlined />,
           },

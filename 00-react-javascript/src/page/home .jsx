@@ -6,7 +6,7 @@ import {
   Divider,
   DatePicker,
   notification,
-  
+  Spin
 } from "antd";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -39,11 +39,14 @@ const ReportPage = () => {
   const [userCount, setUserCount] = useState(0);
   const [userWithRoom, setUserWithRoom] = useState(0);
   const [userWithoutRoom, setUserWithoutRoom] = useState(0);
-
+  //lấy daoanh thu tòa nhà
   const [buildingRevenues, setBuildingRevenues] = useState([]);
   const [selectedDate, setSelectedDate] = useState(dayjs());
+   //loadding
+  const [loading, setLoading] = useState(false);
   const fetchData = async (month, year) => {
     try {
+      setLoading(true);
       const [rooms, users, allRevenueData, deviceRes, bookings] = await Promise.all([
         GetRoomApi(),
         GetUserApi(),
@@ -110,6 +113,8 @@ const ReportPage = () => {
     } catch (err) {
       console.error("Lỗi khi lấy dữ liệu báo cáo:", err);
       notification.error({ message: "Không thể tải dữ liệu báo cáo." });
+    }finally {
+      setLoading(false);
     }
   };
 
@@ -121,6 +126,7 @@ const ReportPage = () => {
   }, [selectedDate]);
 
   return (
+  <Spin spinning={loading}>
     <div className="dashboard-container">
       <h2 style={{ fontSize: 24,  marginBottom: 24, color:" #1e3a8a" }}>
         Mời chọn tháng để xem báo cáo{" "}
@@ -293,7 +299,9 @@ const ReportPage = () => {
         </Row>
       )}
     </div>
+  </Spin>  
   );
+
 };
 
 export default ReportPage;

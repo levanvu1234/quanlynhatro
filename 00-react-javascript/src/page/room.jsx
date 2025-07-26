@@ -24,6 +24,7 @@ import {
   IdcardOutlined,
   PlusOutlined,
   DeleteOutlined,
+  ToolOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import "../style/room.css"; // Import CSS styles for room page
@@ -63,15 +64,21 @@ const RoomPage = () => {
   //modal thietbij
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
   const [selectedRoomDevices, setSelectedRoomDevices] = useState([]); 
+  //loadding
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   // API fetch
   const fetchRooms = async () => {
     try {
+      setLoading(true);
       const res = await GetRoomApi();
       if (Array.isArray(res)) {
         await fetchDevicesForRooms(res);
       }
     } catch (err) {
       console.error("Lỗi khi lấy danh sách phòng:", err);
+    }finally {
+      setLoading(false);
     }
   };
   //thiết bị
@@ -79,9 +86,6 @@ const RoomPage = () => {
   try {
     const res = await GetDeviceApi();
     const allDevices = Array.isArray(res?.data) ? res.data : [];
-
-    
-
     const updatedRooms = rooms.map(room => {
       const devicesForRoom = allDevices.filter(d => {
         if (!d.room) return false;
@@ -160,6 +164,7 @@ const RoomPage = () => {
     .validateFields()
     .then(async (values) => {
       try {
+        setSaving(true); // Bắt đầu loading
         const formData = new FormData();
         // Tính activity dựa trên users
         const activity = values.users && values.users.length > 0 ? "Đã thuê" : "Đang trống";
@@ -227,6 +232,8 @@ const RoomPage = () => {
           message: isEdit ? "Cập nhật thất bại" : "Thêm phòng thất bại",
           description: error.message,
         });
+      }finally {
+        setSaving(false); // Dừng loading
       }
     })
     .catch((err) => {
@@ -375,61 +382,69 @@ const RoomPage = () => {
       render: (building) => building?.location || "---",
     },
     {
-  title: "Ảnh phòng",
-  dataIndex: "images",
-  render: (images) =>
-    images && images.length > 0 ? (
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <img
-          src={`http://localhost:8080/uploads/${images[0]}`}
-          alt="room"
-          style={{
-            width: 60,
-            height: 40,
-            objectFit: "cover",
-            cursor: "pointer",
-            borderRadius: 4,
-          }}
-          onClick={() => {
-            setSelectedRoomImages(images);
-            setImageModalVisible(true);
-          }}
-        />
-        
-      </div>
-    ) : (
-      "---"
-    ),
-},
+      title: "Ảnh phòng",
+      dataIndex: "images",
+      render: (images) =>
+        images && images.length > 0 ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img
+              src={`http://localhost:8080/uploads/${images[0]}`}
+              alt="room"
+              style={{
+                width: 60,
+                height: 40,
+                objectFit: "cover",
+                cursor: "pointer",
+                borderRadius: 4,
+              }}
+              onClick={() => {
+                setSelectedRoomImages(images);
+                setImageModalVisible(true);
+              }}
+            />
+            
+          </div>
+        ) : (
+          "---"
+        ),
+    },
     {
-  title: "Hành động",
-  render: (_, record) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", gap: 8 }}>
-        <Button
-          className="action-button edit"
-          onClick={() => handleEditRoom(record)}
-          icon={<EditOutlined />}
-        >
-          Chỉnh sửa
-        </Button>
-        <Button
-          className="action-button view"
-          onClick={() => handleViewUsers(record)}
-          icon={<IdcardOutlined />}
-        >
-          Người thuê
-        </Button>
-      </div>
-      <Button
-        className="action-button device"
-        onClick={() => handleViewDevices(record)}
-      >
-        Xem thiết bị
-      </Button>
-    </div>
-  ),
-},
+      title: "Hành động",
+      render: (_, record) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button
+              className="action-button edit"
+              onClick={() => handleEditRoom(record)}
+              icon={<EditOutlined />}
+            >
+              Chỉnh sửa
+            </Button>
+
+            {record.users && record.users.length > 0 && (
+              <Button
+                className="action-button view"
+                onClick={() => handleViewUsers(record)}
+                icon={<IdcardOutlined />}
+              >
+                Người thuê
+              </Button>
+            )}
+          </div>
+          {record.devices && record.devices.length > 0 && (
+          <Button
+            className="action-button device"
+            onClick={() => handleViewDevices(record)}
+            icon={ <ToolOutlined />}
+          >
+            Xem thiết bị
+          </Button>
+          )}
+          
+        </div>
+      ),
+    }
+
 
   ];
 
@@ -470,7 +485,7 @@ const RoomPage = () => {
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 300 }}
+            style={{ width: 400 }}
           />
 
           <Select
@@ -478,7 +493,7 @@ const RoomPage = () => {
             allowClear
             value={filterActivity}
             onChange={(value) => setFilterActivity(value ?? undefined)}
-            style={{ width: 180 }}
+            style={{ width: 250 }}
           >
             <Select.Option value="Đã thuê">Đã thuê</Select.Option>
             <Select.Option value="Đang trống">Đang trống</Select.Option>
@@ -521,6 +536,7 @@ const RoomPage = () => {
         columns={columns}
         rowKey="_id"
         pagination={{ pageSize: 4 }}
+        loading={loading}
       />
 
       {/* Modal thêm / sửa phòng */}
@@ -538,6 +554,8 @@ const RoomPage = () => {
         okText="Lưu"
         cancelText="Hủy"
         destroyOnClose={true}
+        confirmLoading={saving} 
+        loading={loading}
       >
         <Form form={form} layout="vertical" encType="multipart/form-data">
           <Form.Item
@@ -622,7 +640,9 @@ const RoomPage = () => {
 
           <Form.Item name="users" label="Người dùng trong phòng">
             <Select mode="multiple" placeholder="Chọn người dùng" optionFilterProp="label" showSearch>
-              {users.map((user) => (
+              {users
+              .filter((user) => user.condition === "Hoạt động")
+              .map((user) => (
                 <Select.Option
                   key={user._id}
                   value={user._id}
@@ -715,7 +735,7 @@ const RoomPage = () => {
           <ul style={{ paddingLeft: 20 }}>
             {selectedRoomDevices.map((device) => (
               <li key={device._id} className="user-item">
-                <strong>{device.name}</strong> — Số lượng: {device.quantity} — Tình trạng: {device.condition}
+                <strong>{device.name}</strong> — Số lượng: {device.quantity} — Tình trạng: {device.condition} — Hoạt động: {device.activity} 
               </li>
             ))}
           </ul>

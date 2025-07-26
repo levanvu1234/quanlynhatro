@@ -15,8 +15,9 @@ import {
   GetBuildingApi,
   CreateBuildingApi,
   updateBuildingApi,
+  deleteBuildingApi,
 } from "../util/api";
-import { PlusOutlined ,DeleteOutlined,EditOutlined} from "@ant-design/icons";
+import { PlusOutlined ,DeleteOutlined,EditOutlined,RollbackOutlined } from "@ant-design/icons";
 import "../style/room.css";
 import "../style/button.css";
 
@@ -40,27 +41,40 @@ const BuildingPage = () => {
 
   const [isEdit, setIsEdit] = useState(false);
   const [editingBuildingId, setEditingBuildingId] = useState(null);
-
+  //lọc
   const [filterAddress, setFilterAddress] = useState(undefined);
   const [filterName, setFilterName] = useState(undefined);
+  const [filterLocation, setFilterLocation] = useState(undefined);
+  const [locationOptions, setLocationOptions] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [addressOptions, setAddressOptions] = useState([]);
-
+  const [filterActivity, setFilterActivity] = useState("Hoạt động");
+  //loadding
+  const [loading, setLoading] = useState(false);
   const fetchBuildings = async () => {
     try {
+      setLoading(true);
       const res = await GetBuildingApi();
       const buildings = Array.isArray(res) ? res : res.data || [];
       setDataSource(buildings);
-      setFilteredData(buildings);
+
+      const activeBuildings = buildings.filter(b => b.activity === "Hoạt động");
+      setFilteredData(activeBuildings);
+
       const uniqueAddresses = [
         ...new Set(buildings.map((b) => b.address).filter(Boolean)),
       ];
+      const uniqueLocations = [
+        ...new Set(buildings.map((b) => b.location).filter(Boolean)),
+      ];
       setAddressOptions(uniqueAddresses);
+      setLocationOptions(uniqueLocations);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách tòa nhà:", error);
+    } finally {
+      setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchBuildings();
   }, []);
@@ -73,10 +87,16 @@ const BuildingPage = () => {
       const matchesAddress = filterAddress
         ? building.address?.toLowerCase().includes(filterAddress.toLowerCase())
         : true;
-      return matchesName && matchesAddress;
+      const matchesLocation = filterLocation
+        ? building.location === filterLocation
+        : true;
+      const matchesActivity = filterActivity
+        ? building.activity === filterActivity
+        : true;
+      return matchesName && matchesAddress && matchesLocation && matchesActivity;
     });
     setFilteredData(filtered);
-  }, [filterName, filterAddress, dataSource]);
+  }, [filterName, filterAddress, filterLocation, filterActivity, dataSource]);
 
   const handleAddBuilding = () => {
     form.validateFields().then(async (values) => {
@@ -91,7 +111,7 @@ const BuildingPage = () => {
         // Gửi danh sách ảnh cũ còn giữ dưới dạng JSON string
         const existingImagePaths = existingImages.map(img => img.originUrl);
         formData.append("existingImages", JSON.stringify(existingImagePaths));
-
+        formData.append("deletedImages", JSON.stringify(deletedImages));
         // Gửi dữ liệu form
         Object.entries(values).forEach(([key, val]) => {
           formData.append(key, val);
@@ -104,7 +124,7 @@ const BuildingPage = () => {
           res = await CreateBuildingApi(formData);
         }
 
-        const building = res?.data?.data || res?.data || res;
+        const building = res?.data || res;
         if (building && building._id) {
           notification.success({
             message: isEdit
@@ -202,10 +222,85 @@ const BuildingPage = () => {
       reader.onerror = (error) => reject(error);
     });
   };
+  const handleDelete = async (building) => {
+    Modal.confirm({
+      title: `Chuyển trạng thái tòa nhà "${building.name}" sang "Tạm dừng"?`,
+      content: "Bạn có chắc chắn muốn tạm dừng hoạt động tòa nhà này?",
+      okText: "Tạm dừng",
+      cancelText: "Hủy",
+      onOk: async () => {
+        const deleteCode = prompt("Nhập mã xác thực để tạm dừng:");
+        if (!deleteCode) return;
+        try {
+          const formData = new FormData();
+          formData.append("activity", "Tạm dừng");
+          formData.append("deleteCode", deleteCode);
+
+          const res = await deleteBuildingApi(building._id, deleteCode);
+
+          if (res?.EC === 0) {
+            notification.success({ message: res.EM });
+            fetchBuildings();
+          } else {
+            notification.error({ message: res.EM || "Tạm dừng thất bại" });
+          }
+        } catch (err) {
+          console.error("Lỗi tạm dừng building:", err);
+          notification.error({
+            message: "Lỗi hệ thống",
+            description: "Không thể tạm dừng tòa nhà.",
+          });
+        }
+      },
+    });
+  };
+  const handleRestore = async (building) => {
+    try {
+      const formData = new FormData();
+
+      // Gửi lại tất cả thông tin quan trọng để khôi phục, bao gồm cả images
+      formData.append("activity", "Hoạt động");
+
+      // Gửi lại danh sách ảnh cũ nếu có
+      if (Array.isArray(building.images)) {
+        formData.append("existingImages", JSON.stringify(building.images));
+      }
+
+      // Gọi API cập nhật với formData thay vì object JSON
+      const res = await updateBuildingApi(building._id, formData);
+
+      if (res && res._id) {
+        notification.success({ message: "Khôi phục tòa nhà thành công" });
+        fetchBuildings();
+      } else {
+        notification.error({ message: "Khôi phục thất bại" });
+      }
+    } catch (err) {
+      console.error("Lỗi khôi phục tòa nhà:", err);
+      notification.error({
+        message: "Lỗi hệ thống",
+        description: "Không thể khôi phục tòa nhà.",
+      });
+    }
+  };
+
 
   const columns = [
     { title: "Tên tòa nhà", dataIndex: "name" },
-    { title: "Hoạt động", dataIndex: "activity" },
+    {
+      title: "Hoạt động",
+      dataIndex: "activity",
+      filters: [
+        { text: "Hoạt động", value: "Hoạt động" },
+        { text: "Tạm dừng", value: "Tạm dừng" },
+      ],
+      onFilter: (value, record) => record.activity === value,
+      render: (activity) => (
+        <span style={{ color: activity === "Hoạt động" ? "green" : "red" }}>
+          {activity}
+        </span>
+      ),
+    },
     { title: "Địa chỉ", dataIndex: "address" },
     { title: "Khu vực", dataIndex: "location" },
     { title: "Giá điện", dataIndex: "electricityUnitPrice" },
@@ -238,15 +333,36 @@ const BuildingPage = () => {
     },
     {
       title: "Hành động",
-      render: (_, record) => (
-        <Button
-          icon={<EditOutlined />}
-          className="action-button edit"
-          onClick={() => handleEditBuilding(record)}
-        >
-          Chỉnh sửa
-        </Button>
-      ),
+      render: (text, record) => {
+          return record.activity === "Tạm dừng" ? (
+            <Button
+              onClick={() => handleRestore(record)}
+              style={{ color: "green", borderColor: "green" }}
+              icon ={<RollbackOutlined />}
+            >
+              Hoàn tác
+            </Button>
+          ) : (
+            <>
+              <div style={{ display: "flex", gap: "8px" }}>    
+                <Button
+                  icon={<EditOutlined />}
+                  className="action-button edit"
+                  onClick={() => handleEditBuilding(record)}
+                >
+                Chỉnh sửa
+                </Button>
+                <Button
+                  icon={<DeleteOutlined />}
+                  danger
+                  onClick={() => handleDelete(record)}
+                >
+                Xóa
+                </Button>  
+              </div>
+            </>
+          )  
+      },
     },
   ];
 
@@ -281,7 +397,7 @@ const BuildingPage = () => {
           </Button>
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "nowrap" }}>
           <Select
             placeholder="Lọc theo tên tòa nhà"
             allowClear
@@ -292,6 +408,19 @@ const BuildingPage = () => {
             {[...new Set(dataSource.map((b) => b.name))].map((name) => (
               <Select.Option key={name} value={name}>
                 {name}
+              </Select.Option>
+            ))}
+          </Select>
+          <Select
+            placeholder="Lọc theo khu vực"
+            allowClear
+            value={filterLocation}
+            onChange={(value) => setFilterLocation(value)}
+            style={{ width: 250 }}
+          >
+            {locationOptions.map((addr) => (
+              <Select.Option key={addr} value={addr}>
+                {addr}
               </Select.Option>
             ))}
           </Select>
@@ -308,6 +437,16 @@ const BuildingPage = () => {
               </Select.Option>
             ))}
           </Select>
+          <Select
+            placeholder="Lọc theo hoạt động"
+            allowClear
+            style={{ width: 200 }}
+            value={filterActivity}
+            onChange={(value) => setFilterActivity(value ?? undefined)}
+          >
+            <Select.Option value="Hoạt động">Hoạt động</Select.Option>
+            <Select.Option value="Tạm dừng">Tạm dừng</Select.Option>
+          </Select>
           <Button
             type="primary"
             danger
@@ -315,6 +454,8 @@ const BuildingPage = () => {
             onClick={() => {
               setFilterName(undefined);
               setFilterAddress(undefined);
+              setFilterLocation(undefined);
+              setFilterActivity("Hoạt động");
             }}
           >
             Xóa lọc
@@ -327,6 +468,7 @@ const BuildingPage = () => {
         columns={columns}
         rowKey="_id"
         pagination={{ pageSize: 5 }}
+        loading={loading}
       />
 
       <Modal
@@ -351,17 +493,6 @@ const BuildingPage = () => {
             rules={[{ required: true, message: "Vui lòng nhập tên tòa nhà" }]}
           >
             <Input placeholder="VD: Tòa A" />
-          </Form.Item>
-
-          <Form.Item
-            name="activity"
-            label="Trạng thái"
-            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
-          >
-            <Select placeholder="Chọn trạng thái">
-              <Select.Option value="Hoạt động">Hoạt động</Select.Option>
-              <Select.Option value="Tạm dừng">Tạm dừng</Select.Option>
-            </Select>
           </Form.Item>
 
           <Form.Item

@@ -8,8 +8,12 @@ const Footer = () => {
       <div className="footer-top">
         {/* Logo và slogan */}
         <div className="footer-logo-slogan">
-         
-          <p> 🏠NhaTroHD cung cấp đa dạng loại phòng, bao gồm phòng trọ, chung cư mini và căn hộ dịch vụ.</p>
+          <img
+            src="src/assets/R__2_-removebg-preview-removebg-preview.png"
+            alt="logo"
+            style={{ height: '100px', width: 'auto' }}
+          />
+          <p> NhaTroHD cung cấp đa dạng loại phòng, bao gồm phòng trọ, chung cư mini và căn hộ dịch vụ.</p>
         </div>
 
         {/* Các link thông tin */}
@@ -32,7 +36,7 @@ const Footer = () => {
             </ul>
           </Col>
           <Col span={6}>
-            {/* Có thể thêm info hoặc icon mạng xã hội */}
+            
           </Col>
         </Row>
       </div>

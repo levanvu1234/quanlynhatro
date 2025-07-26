@@ -42,7 +42,9 @@ const AppService = () => {
   if (apploading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" tip="Đang tải dữ liệu người dùng..." />
+        <Spin size="large" tip="Đang tải dữ liệu người dùng...">
+          <div style={{ width: 0, height: 0 }}></div>
+        </Spin>
       </div>
     );
   }
@@ -53,6 +55,8 @@ const AppService = () => {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
+        
+        padding: 0,
       }}
     >
       <Layout style={{ flex: 1 }}>
@@ -60,7 +64,7 @@ const AppService = () => {
           <PublicHeader />
         </Header>
 
-        <Content style={{ padding: 24, backgroundColor: '#fff' ,overflow: 'auto' , flex: 1 }}>
+        <Content style={{  backgroundColor: '#fff' ,overflow: 'auto' , flex: 1 }}>
           <Outlet />
         </Content>
       </Layout>

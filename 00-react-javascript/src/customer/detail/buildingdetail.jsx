@@ -50,101 +50,122 @@ const BuildingDetailPage = () => {
   if (!building) {
     return <p>Không tìm thấy tòa nhà</p>;
   }
-  const availableRooms = (building.rooms || []).filter(room => room.activity === 'Đang trống');
+  const availableRooms = (building.rooms || []).filter(
+    room => room.activity === 'Đang trống' && (!room.users || room.users.length === 0)
+  );
   const totalPages = Math.ceil(availableRooms.length / pageSize);
   const currentRooms = availableRooms.slice(roomPage * pageSize, (roomPage + 1) * pageSize);
   return (
      <>
     <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-      <Title level={3}>{building.location}</Title>
-      {/* Carousel ảnh to */}
-      {building.images?.length > 0 && (
-  <Row gutter={[16, 16]}>
-    {/* Ảnh lớn bên trái */}
-    <Col xs={24} md={16}>
-      <img
-        src={`http://localhost:8080${building.images[0]}`}
-        alt="main-building"
-        style={{
-          width: '100%',
-          height: 480,
-          objectFit: 'cover',
-          borderRadius: 8,
-        }}
-      />
-    </Col>
+      <div style={{
+        boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+        borderRadius: 12,
+        padding: 24,
+        background: '#fff', 
+      }}> 
+        <Title level={3}>{building.location}</Title>
+        {/* Carousel ảnh to */}
+        {building.images?.length > 0 && (
+          <Row gutter={[16, 16]}>
+            {/* Ảnh lớn bên trái */}
+            <Col xs={24} md={16}>
+              <img
+                src={`http://localhost:8080${building.images[0]}`}
+                alt="main-building"
+                style={{
+                  width: '100%',
+                  height: 480,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                }}
+              />
+            </Col>
 
-    {/* Nhóm 4 ảnh nhỏ bên phải */}
-    <Col xs={24} md={8}>
-      <Row gutter={[8, 8]}>
-        {building.images.slice(1, 7).map((img, idx) => (
-          <Col span={12} key={idx}>
-            <img
-              src={`http://localhost:8080${img}`}
-              alt={`thumb-${idx}`}
-              style={{
-                width: '100%',
-                height: 115,
-                objectFit: 'cover',
-                borderRadius: 6,
-              }}
-            />
-          </Col>
-        ))}
-      </Row>
-
-      {/* Nút xem tất cả ảnh nếu có nhiều hơn 5 ảnh */}
-      {building.images.length > 5 && (
-        <div style={{ textAlign: 'center', marginTop: 12 }}>
-          <Button icon={<EyeOutlined />} onClick={() => setOpenGallery(true)}>
-            Xem tất cả ảnh
-          </Button>
-        </div>
-      )}
-    </Col>
-  </Row>
-)}
-      
-         
-      <Divider />
-
-    <Row gutter={32} style={{ marginTop: 32 }}>
-      {/* Cột trái - Thông tin tòa nhà */}
-      <Col xs={24} md={14}>
-        <Descriptions bordered column={1}>
-          <Descriptions.Item label="Tên tòa nhà">{building.name}</Descriptions.Item>
-          <Descriptions.Item label="Địa chỉ">{building.address}</Descriptions.Item>
-          <Descriptions.Item label="Khu vực">{building.location}</Descriptions.Item>
-          <Descriptions.Item label="Giá điện">{building.electricityUnitPrice?.toLocaleString()} đ/kWh</Descriptions.Item>
-          <Descriptions.Item label="Giá nước">{building.waterUnitPrice?.toLocaleString()} đ/m³</Descriptions.Item>
-          <Descriptions.Item label="Phòng trống">{building.rooms?.length || 0} </Descriptions.Item>
-        </Descriptions>
-          {/* Tiện ích */}
-          <div style={{ marginTop: 24 }}>
-            <Title level={4}>Tiện ích</Title>
-            {building.utilities?.length > 0 ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                {building.utilities.map((util, idx) => (
-                  <Tag key={idx} color="blue">{util}</Tag>
+            {/* Nhóm 4 ảnh nhỏ bên phải */}
+            <Col xs={24} md={8}>
+              <Row gutter={[8, 8]}>
+                {building.images.slice(1, 7).map((img, idx) => (
+                  <Col span={12} key={idx}>
+                    <img
+                      src={`http://localhost:8080${img}`}
+                      alt={`thumb-${idx}`}
+                      style={{
+                        width: '90%',
+                        height: 115,
+                        objectFit: 'cover',
+                        borderRadius: 6,
+                      }}
+                    />
+                  </Col>
                 ))}
-              </div>
-            ) : (
-              <Text>Chưa có tiện ích</Text>
-            )}
-          </div>
+              </Row>
 
-        {/* Ưu đãi */}
-        <div style={{ marginTop: 24 }}>
-          <Card style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}>
-            <Text strong>🎁 Ưu đãi:</Text> <Text>Nhận ưu đãi cho thuê khi đăng ký trực tuyến tại hệ thống!</Text>
-            <Tag color="gold" style={{ marginLeft: 10 }}>SALE</Tag>
-          </Card>
-        </div>
-      </Col>  
-    </Row>
+              {/* Nút xem tất cả ảnh nếu có nhiều hơn 5 ảnh */}
+              {building.images.length > 2 && (
+                <div style={{ textAlign: 'center', marginTop: 12 }}>
+                  <Button icon={<EyeOutlined />} onClick={() => setOpenGallery(true)}>
+                    Xem tất cả ảnh
+                  </Button>
+                </div>
+              )}
+            </Col>
+          </Row>
+        )}
+      </div> 
+      <Divider />
+      <div style={{
+        boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+        borderRadius: 12,
+        padding: 24,
+        background: '#fff', 
+      }}> 
+        <Row gutter={32} >
+          {/* Cột trái - Thông tin tòa nhà */}
+          <Col xs={24} md={14}>
+            <Descriptions bordered column={1}>
+              <Descriptions.Item label="Tên tòa nhà">{building.name}</Descriptions.Item>
+              <Descriptions.Item label="Địa chỉ">{building.address}</Descriptions.Item>
+              <Descriptions.Item label="Khu vực">{building.location}</Descriptions.Item>
+              <Descriptions.Item label="Giá điện">{building.electricityUnitPrice?.toLocaleString()} đ/kWh</Descriptions.Item>
+              <Descriptions.Item label="Giá nước">{building.waterUnitPrice?.toLocaleString()} đ/m³</Descriptions.Item>
+              <Descriptions.Item label="Phòng trống">{availableRooms.length}</Descriptions.Item>
+            </Descriptions>
+              {/* Tiện ích */}
+              <div style={{ marginTop: 24 }}>
+                <Title level={4}>Tiện ích</Title>
+                {building.utilities?.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    {building.utilities.map((util, idx) => (
+                      <Tag key={idx} color="blue">{util}</Tag>
+                    ))}
+                  </div>
+                ) : (
+                  <Text>Chưa có tiện ích</Text>
+                )}
+              </div>
+
+            {/* Ưu đãi */}
+            <div style={{ marginTop: 24 }}>
+              <Card style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a' }}>
+                <Text strong>🎁 Ưu đãi:</Text> <Text>Nhận ưu đãi cho thuê khi đăng ký trực tuyến tại hệ thống!</Text>
+                <Tag color="gold" style={{ marginLeft: 10 }}>SALE</Tag>
+              </Card>
+            </div>
+          </Col>  
+        </Row>
+      </div>
+   
       {/* Danh sách phòng trống */}
-      <Title level={4}>Phòng trống</Title>
-      <div style={{ position: 'relative', marginBottom: 32 }}>
+      <Divider />
+      <div style={{ 
+        position: 'relative', 
+        marginBottom: 32, 
+        boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+        borderRadius: 12,
+        padding: 24,
+        background: '#fff',  }}>
+        <Title level={4}>Phòng trống</Title>
         {/* Nút trái */}
         <Button
           icon={<LeftOutlined style={{ fontSize: 18 }} />}
@@ -220,9 +241,12 @@ const BuildingDetailPage = () => {
                     </div>
                   }
                 >
-                  <Title level={5}>{room.name}</Title>
+                  <Title level={5}>Phòng {room.name}</Title>
                   <Text>💰 {room.roomPrice?.toLocaleString() || 'N/A'} đ</Text><br />
+                  <Text>⚡ {building.electricityUnitPrice?.toLocaleString()} đ/kWh</Text><br />
+                  <Text>💧 {building.waterUnitPrice?.toLocaleString()} đ/m³</Text><br />
                   <Text>📏 {room.area} m²</Text><br />
+                  <Text>🗺️ {building.location}</Text><br />
                   <Text>🛠 {room.devices?.length || 0} thiết bị</Text><br />
                   <Tag color="green" style={{ marginTop: 8 }}>{room.activity}</Tag>
                   <div style={{ marginTop: 12 }}>

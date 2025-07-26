@@ -18,9 +18,13 @@ const userSchema = new mongoose.Schema({
         ref: 'Building'
     },
     activity: String,
-    roombuilding: String,
+    roombuilding: String, // tòa nhà
     phonenumber: String,
     // schedule: Date,
+    condition: {
+        type: String,
+        default: "Hoạt động"
+    },
 });
 
 const User = mongoose.model('User', userSchema);
