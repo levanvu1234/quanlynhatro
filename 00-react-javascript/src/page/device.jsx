@@ -183,8 +183,28 @@ const DevicePage = () => {
   const columns = [
     { title: 'Tên thiết bị', dataIndex: 'name', key: 'name' },
     { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
-    { title: 'Tình trạng', dataIndex: 'condition', key: 'condition' },
-    { title: 'Trạng thái', dataIndex: 'activity', key: 'activity' },
+    { 
+      title: 'Tình trạng', 
+      dataIndex: 'condition', 
+      key: 'condition', 
+      render: (condition) => {
+        let color = "red";
+        if (condition === "Tốt") color = "green";
+        else if (condition === "Đang sửa") color = "orange";
+
+        return <span style={{ color }}>{condition}</span>;
+      },
+    },
+    { 
+      title: 'Trạng thái', 
+      dataIndex: 'activity', 
+      key: 'activity' ,
+      render: (activity) => (
+        <span style={{ color: activity === "Hoạt động" ? "green" : "red" }}>
+          {activity}
+        </span>
+      ),
+    },
     {
       title: 'Ghi chú',
       dataIndex: 'note',

@@ -113,7 +113,16 @@ const BookingPage = () => {
     { title: 'Email', dataIndex: 'email' },
     { title: 'Phòng', render: (_, r) => r.roomId?.name || r.roomId },
     { title: 'Tòa nhà', render: (_, r) => r.roomId?.building?.name || 'Không rõ' },
-    { title: 'Trạng thái', dataIndex: 'status' },
+    { title: 'Trạng thái',
+       dataIndex: 'status' ,
+       render: (condition) => {
+        let color = "red";
+        if (condition === "Đã duyệt") color = "green";
+        else if (condition === "Chưa duyệt") color = "orange";
+
+        return <span style={{ color }}>{condition}</span>;
+      },
+    },
     {
       title: 'Lịch hẹn',
       render: (_, r) =>

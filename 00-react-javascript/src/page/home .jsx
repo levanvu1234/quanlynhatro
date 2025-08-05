@@ -1,15 +1,33 @@
+// File: ReportPage.js (HOÀN CHÍNH SAU CHỊNH SỬaN)
+
+import React, { useEffect, useState } from "react";
 import {
   Card,
-  Statistic,
-  Row,
   Col,
+  Row,
+  Typography,
+  Table,
+  Statistic,
   Divider,
-  DatePicker,
-  notification,
-  Spin
+  Empty,
+  Spin,
+  Select,
 } from "antd";
-import { useEffect, useState } from "react";
-import dayjs from "dayjs";
+import {
+  BarChartOutlined,
+  DollarCircleOutlined,
+  HomeOutlined,
+  TeamOutlined,
+} from "@ant-design/icons";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  LabelList,
+} from "recharts";
 import {
   GetRoomApi,
   GetUserApi,
@@ -17,291 +35,327 @@ import {
   GetDeviceApi,
   GetBookingsApi,
 } from "../util/api";
-import "../style/home.css";
+
+const { Title } = Typography;
+const { Option } = Select;
 
 const ReportPage = () => {
-  const [roomData, setRoomData] = useState({
-    total: 0,
-    rented: 0,
-    available: 0,
-  });
+  const [rooms, setRooms] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [allRevenueData, setAllRevenueData] = useState([]);
 
-  const [deviceStats, setDeviceStats] = useState({
-    total: 0,
-    active: 0,
-    broken: 0,
-  });
-  const [bookingStats, setBookingStats] = useState({
-    total: 0,
-    approved: 0,
-    pending: 0,
-  });
-  const [userCount, setUserCount] = useState(0);
-  const [userWithRoom, setUserWithRoom] = useState(0);
-  const [userWithoutRoom, setUserWithoutRoom] = useState(0);
-  //lấy daoanh thu tòa nhà
-  const [buildingRevenues, setBuildingRevenues] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
-   //loadding
-  const [loading, setLoading] = useState(false);
-  const fetchData = async (month, year) => {
-    try {
-      setLoading(true);
-      const [rooms, users, allRevenueData, deviceRes, bookings] = await Promise.all([
-        GetRoomApi(),
-        GetUserApi(),
-        GetBuildingRevenueApi(),
-        GetDeviceApi(),
-        GetBookingsApi(),
-      ]);
+  const [yearlyRevenueData, setYearlyRevenueData] = useState([]);
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState([]);
+  const [buildingRevenueData, setBuildingRevenueData] = useState([]);
+  const [chartType, setChartType] = useState("year");
+  const [loading, setLoading] = useState(true);
 
-      const devices = deviceRes?.data || [];
-
-      if (Array.isArray(devices)) {
-        const total = devices.length;
-        const active = devices.filter((d) => d.condition === "Tốt").length;
-        const broken = devices.filter((d) => d.condition === "Cần sửa").length;
-        setDeviceStats({ total, active, broken });
-      }
-
-      if (Array.isArray(rooms)) {
-        const total = rooms.length;
-        const rented = rooms.filter((room) => room.activity === "Đã thuê").length;
-        const available = total - rented;
-        setRoomData({ total, rented, available });
-
-        const userIdsInRooms = new Set();
-        rooms.forEach((room) => {
-          (room.users || []).forEach((user) => {
-            userIdsInRooms.add(typeof user === "object" ? user._id : user);
-          });
-        });
-
-        if (Array.isArray(users)) {
-          setUserCount(users.length);
-          const allUserIds = users.map((user) => user._id);
-          const withRoom = allUserIds.filter((id) => userIdsInRooms.has(id)).length;
-          const withoutRoom = allUserIds.length - withRoom;
-          setUserWithRoom(withRoom);
-          setUserWithoutRoom(withoutRoom);
-        }
-      }
-
-      if (Array.isArray(bookings)) {
-        const total = bookings.length;
-        const approved = bookings.filter((b) => b.status === "Đã duyệt").length;
-        const pending = bookings.filter((b) => b.status === "Đang chờ").length;
-        setBookingStats({ total, approved, pending });
-      }
-
-      const filtered = (allRevenueData || [])
-        .map((building) => {
-          const validRevenue = Array.isArray(building.revenue) ? building.revenue : [];
-          const matched = validRevenue.find(
-            (r) => Number(r.month) === Number(month) && Number(r.year) === Number(year)
-          );
-          return matched
-            ? {
-                buildingName: building.name,
-                totalRevenue: matched.totalAmount,
-              }
-            : null;
-        })
-        .filter(Boolean);
-
-      setBuildingRevenues(filtered);
-    } catch (err) {
-      console.error("Lỗi khi lấy dữ liệu báo cáo:", err);
-      notification.error({ message: "Không thể tải dữ liệu báo cáo." });
-    }finally {
-      setLoading(false);
-    }
-  };
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
 
   useEffect(() => {
-    if (!selectedDate) return;
-    const month = selectedDate.month() + 1;
-    const year = selectedDate.year();
-    fetchData(month, year);
-  }, [selectedDate]);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [roomRes, userRes, revenueRes, deviceRes, bookingsRes] =
+          await Promise.all([
+            GetRoomApi(),
+            GetUserApi(),
+            GetBuildingRevenueApi(),
+            GetDeviceApi(),
+            GetBookingsApi(),
+          ]);
+        setRooms(roomRes);
+        setUsers(userRes);
+        setAllRevenueData(revenueRes);
+        setDevices(deviceRes.data || []);
+        setBookings(bookingsRes);
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu báo cáo:", error);
+      }
+      setLoading(false);
+    };
+
+    fetchData();
+  }, []);
+
+  const flatRevenueData = Array.isArray(allRevenueData)
+    ? allRevenueData.flatMap((b) =>
+        (b.revenue || []).map((r) => ({
+          buildingName: b.name,
+          year: r.year,
+          month: r.month,
+          totalAmount: r.totalAmount,
+        }))
+      )
+    : [];
+  useEffect(() => {
+    setSelectedMonth(null);
+  }, [selectedYear]);    
+  const uniqueYears = [...new Set(flatRevenueData.map((item) => item.year))];
+  const uniqueMonths = [
+    ...new Set(
+      flatRevenueData
+        .filter((item) => !selectedYear || item.year === selectedYear)
+        .map((item) => item.month)
+    ),
+  ];
+  const uniqueBuildings = [...new Set(flatRevenueData.map((item) => item.buildingName))];
+
+  const filteredData = flatRevenueData.filter((item) => {
+    return (
+      (selectedYear ? item.year === selectedYear : true) &&
+      (selectedMonth ? item.month === selectedMonth : true) &&
+      (selectedBuilding ? item.buildingName === selectedBuilding : true)
+    );
+  });
+
+  useEffect(() => {
+    if (!Array.isArray(allRevenueData)) return;
+
+    const yearlyTotals = {};
+    const monthlyTotals = {};
+    const buildingTotals = [];
+
+    allRevenueData.forEach((building) => {
+      let totalByBuilding = 0;
+      if (Array.isArray(building.revenue)) {
+        building.revenue.forEach((r) => {
+          const label = `Th${r.month}/${r.year}`;
+          yearlyTotals[r.year] = (yearlyTotals[r.year] || 0) + r.totalAmount;
+          monthlyTotals[label] = (monthlyTotals[label] || 0) + r.totalAmount;
+          totalByBuilding += r.totalAmount;
+        });
+      }
+      buildingTotals.push({ name: building.name, revenue: totalByBuilding });
+    });
+
+    setYearlyRevenueData(
+      Object.entries(yearlyTotals).map(([year, revenue]) => ({ year, revenue }))
+    );
+
+    setMonthlyRevenueData(
+      Object.entries(monthlyTotals).map(([label, revenue]) => ({ label, revenue }))
+    );
+
+    setBuildingRevenueData(buildingTotals);
+  }, [allRevenueData]);
+  
+  const columns = [
+    {
+      title: "Tòa nhà",
+      dataIndex: "buildingName",
+      key: "buildingName",
+      sorter: (a, b) => a.buildingName.localeCompare(b.buildingName),
+    },
+    {
+      title: "Năm",
+      dataIndex: "year",
+      key: "year",
+      sorter: (a, b) => a.year - b.year,
+      align: "center",
+    },
+    {
+      title: "Tháng",
+      dataIndex: "month",
+      key: "month",
+      render: (month) => `Tháng ${month}`,
+      sorter: (a, b) => a.month - b.month,
+      align: "center",
+    },
+    {
+      title: "Tổng doanh thu",
+      dataIndex: "totalAmount",
+      key: "totalAmount",
+      render: (value) => value.toLocaleString("vi-VN") + " VNĐ",
+      sorter: (a, b) => a.totalAmount - b.totalAmount,
+      align: "right",
+    },
+  ];
+
+  const renderChart = () => {
+    let data, xKey;
+    if (chartType === "year") {
+      data = yearlyRevenueData;
+      xKey = "year";
+    } else if (chartType === "month") {
+      data = monthlyRevenueData;
+      xKey = "label";
+    } else {
+      data = buildingRevenueData;
+      xKey = "name";
+    }
+
+    return data?.length ? (
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart 
+          data={data}
+          margin={{ top: 30, right: 30, left: 0, bottom: 5 }}
+        >
+          <XAxis dataKey={xKey} />
+          <YAxis />
+          <Tooltip
+            formatter={(value) => value.toLocaleString("vi-VN") + " VNĐ"}
+          />
+          <Bar dataKey="revenue" fill="#1890ff">
+            <LabelList
+              dataKey="revenue"
+              position="top"
+              formatter={(value) => value.toLocaleString("vi-VN")}
+              offset={10}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    ) : (
+      <Empty description="Không có dữ liệu" />
+    );
+  };
 
   return (
-  <Spin spinning={loading}>
-    <div className="dashboard-container">
-      <h2 style={{ fontSize: 24,  marginBottom: 24, color:" #1e3a8a" }}>
-        Mời chọn tháng để xem báo cáo{" "}
-        <DatePicker
-          picker="month"
-          value={selectedDate}
-          onChange={(date) => setSelectedDate(date)}
-          style={{ marginLeft: 16 }}
-        />
-      </h2>
+    <Spin spinning={loading}>
+      <div style={{ padding: 24 }}>
+        <Title level={2}>Báo cáo tổng hợp</Title>
 
-      <Divider />
-
-      {/* Booking stats */}
-      <Row gutter={24} style={{ marginBottom: 15 }}>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Tổng số lượt đặt lịch"
-              value={bookingStats.total}
-              prefix={<i className="fas fa-calendar-alt" style={{ color: "#1890ff" }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Lượt đã duyệt"
-              value={bookingStats.approved}
-              valueStyle={{ color: "#52c41a" }}
-              prefix={<i className="fas fa-check" style={{ color: "#52c41a" }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Lượt đang chờ"
-              value={bookingStats.pending}
-              valueStyle={{ color: "#faad14" }}
-              prefix={<i className="fas fa-clock" style={{ color: "#faad14" }} />}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Phòng */}
-      <Row gutter={24}>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Tổng số phòng"
-              value={roomData.total}
-              prefix={<i className="fas fa-building" style={{ color: "#1890ff" }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Phòng đã thuê"
-              value={roomData.rented}
-              valueStyle={{ color: "#52c41a" }}
-              prefix={<i className="fa-solid fa-person-shelter" style={{ color: "#52c41a" }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Phòng trống"
-              value={roomData.available}
-              valueStyle={{ color: "#faad14" }}
-              prefix={<i className="fas fa-door-open" style={{ color: "#faad14" }} />}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Người dùng */}
-      <Row gutter={24} style={{ marginTop: 15 }}>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Tổng số người dùng"
-              value={userCount}
-              prefix={<i className="fas fa-users" style={{ color: "#1890ff" }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Đang thuê phòng"
-              value={userWithRoom}
-              valueStyle={{ color: "#1890ff" }}
-              prefix={<i className="fa-solid fa-person-shelter" style={{ color: "#3f8600" }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Chưa có phòng"
-              value={userWithoutRoom}
-              valueStyle={{ color: "#faad14" }}
-              prefix={<i className="fas fa-door-open" style={{ color: "#3f8600" }} />}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Thiết bị */}
-      <Row gutter={24} style={{ marginTop: 15 }}>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Tổng số thiết bị"
-              value={deviceStats.total}
-              prefix={<i className="fas fa-cogs" style={{ color: "#1890ff" }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Thiết bị đang hoạt động"
-              value={deviceStats.active}
-              valueStyle={{ color: "#52c41a" }}
-              prefix={<i className="fas fa-check-circle" style={{ color: "#52c41a" }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card className="statistic-card">
-            <Statistic
-              title="Thiết bị cần sửa"
-              value={deviceStats.broken}
-              valueStyle={{ color: "#fa541c" }}
-              prefix={<i className="fas fa-tools" style={{ color: "#fa541c" }} />}
-            />
-          </Card>
-        </Col>
-      </Row>
-      <Divider/>
-      {/* Doanh thu */}
-      <h3 style={{ margin: 0 }}>
-        Doanh thu theo tòa nhà (
-        {selectedDate ? selectedDate.format("MM/YYYY") : "chưa chọn"})
-      </h3>
-
-      {buildingRevenues.length === 0 ? (
-        <p style={{ marginTop: 12, color: "#999" }}>
-          Không có dữ liệu doanh thu trong tháng này.
-        </p>
-      ) : (
-        <Row gutter={24}>
-          {buildingRevenues.map((bld, idx) => (
-            <Col span={8} key={idx}>
-              <Card className="statistic-card">
-                <Statistic
-                  title={`Tòa: ${bld.buildingName}`}
-                  value={bld.totalRevenue}
-                  suffix="VNĐ"
-                  valueStyle={{ color: "#722ed1" }}
-                />
-              </Card>
-            </Col>
-          ))}
+        <Row gutter={16}>
+          <Col span={6}>
+            <Card>
+              <Statistic title="Tổng số phòng" value={rooms.length} prefix={<HomeOutlined />} />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic title="Tổng số người dùng" value={users.length} prefix={<TeamOutlined />} />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic title="Tổng số thiết bị" value={devices.length} prefix={<BarChartOutlined />} />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic title="Tổng số đơn đặt lịch" value={bookings.length} prefix={<DollarCircleOutlined />} />
+            </Card>
+          </Col>
         </Row>
-      )}
-    </div>
-  </Spin>  
-  );
 
+        <Divider />
+
+        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+          <Col>
+            <Title level={4}>Biểu đồ doanh thu</Title>
+          </Col>
+          <Col>
+            <Select value={chartType} onChange={setChartType} style={{ width: 200 }}>
+              <Option value="year">Theo năm</Option>
+              <Option value="building">Theo tòa nhà</Option>
+            </Select>
+          </Col>
+        </Row>
+
+        {renderChart()}
+
+{selectedYear && (
+  <>
+    <Divider />
+    <Title level={4}>
+      Biểu đồ doanh thu theo tháng trong năm {selectedYear}
+    </Title>
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart
+        data={flatRevenueData
+          .filter((item) => item.year === selectedYear)
+          .reduce((acc, cur) => {
+            const existing = acc.find((i) => i.month === cur.month);
+            if (existing) {
+              existing.revenue += cur.totalAmount;
+            } else {
+              acc.push({ month: cur.month, revenue: cur.totalAmount });
+            }
+            return acc;
+          }, [])
+          .sort((a, b) => a.month - b.month)}
+          margin={{ top: 30, right: 30, left: 0, bottom: 5 }}
+      >
+        <XAxis dataKey="month" tickFormatter={(m) => `Tháng ${m}`} />
+        <YAxis />
+        <Tooltip formatter={(value) => value.toLocaleString("vi-VN") + " VNĐ"} />
+        <Bar dataKey="revenue" fill="#52c41a">
+          <LabelList
+            dataKey="revenue"
+            position="top"
+            formatter={(value) => value.toLocaleString("vi-VN")}
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  </>
+)}
+
+
+        <Divider />
+
+        <Title level={4}>Bảng doanh thu</Title>
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col>
+            <Select
+              placeholder="Chọn năm"
+              allowClear
+              style={{ width: 120 }}
+              value={selectedYear}  
+              onChange={setSelectedYear}
+            >
+              {uniqueYears.map((year) => (
+                <Option key={year} value={year}>
+                  {year}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+          <Col>
+            <Select
+              placeholder="Chọn tháng"
+              allowClear
+              style={{ width: 120 }}
+              value={selectedMonth}
+              onChange={setSelectedMonth}
+            >
+              {uniqueMonths.map((month) => (
+                <Option key={month} value={month}>
+                  Tháng {month}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+          <Col>
+            <Select
+              placeholder="Chọn tòa nhà"
+              allowClear
+              style={{ width: 200 }}
+              value={selectedBuilding}
+              onChange={setSelectedBuilding}
+            >
+              {uniqueBuildings.map((name) => (
+                <Option key={name} value={name}>
+                  {name}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+        </Row>
+
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          rowKey={(record, index) => `${record.buildingName}-${record.year}-${record.month}-${index}`}
+        />
+      </div>
+    </Spin>
+  );
 };
 
 export default ReportPage;

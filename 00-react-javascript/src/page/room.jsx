@@ -9,6 +9,7 @@ import {
   Divider,
   Upload,
   DatePicker,
+  
 } from "antd";
 import { useEffect, useState } from "react";
 import {
@@ -345,8 +346,17 @@ const RoomPage = () => {
     { title: "Tên phòng", dataIndex: "name" },
     {
       title: "Hoạt động",
-      render: (_, record) =>
-        record.users && record.users.length > 0 ? "Đã thuê" : "Đang trống",
+      render: (_, record) => {
+        const isOccupied = record.users && record.users.length > 0;
+        const color = isOccupied ? "green" : "red";
+        const text = isOccupied ? "Đã thuê" : "Đang trống";
+
+        return (
+          <span style={{ color}}>
+            {text}
+          </span>
+        );
+      },
     },
     {
       title: "Ngày bắt đầu",

@@ -25,9 +25,7 @@ const RoomDetailPage = () => {
       if (!roomRes || !roomRes.building || !roomRes.building._id) {
         throw new Error('Không có thông tin phòng hoặc tòa nhà');
       }
-
       setRoom(roomRes);
-      console.log(room.devices);
       const buildingRes = await GetBuildingByIdApi(roomRes.building._id);
       const allRooms = buildingRes.rooms || [];
       const filteredRooms = allRooms
@@ -66,7 +64,7 @@ const RoomDetailPage = () => {
   if (!room) return <p>Đang tải...</p>;
   // Tổng số trang
   const totalPages = Math.ceil(otherRooms.length / pageSize);
-
+  
   // Phòng của trang hiện tại
   const currentRooms = otherRooms.slice(roomPage * pageSize, roomPage * pageSize + pageSize); 
   return (
@@ -242,15 +240,11 @@ const RoomDetailPage = () => {
                               <Card
                                 hoverable
                                 style={{
-                                  height: '100%',
                                   display: 'flex',
-                                  flexDirection: 'column',
-                                }}
-                                bodyStyle={{
                                   flex: 1,
-                                  display: 'flex',
-                                  flexDirection: 'column',
+                                  height: '100%',
                                   justifyContent: 'space-between',
+                                  flexDirection: 'column',
                                   padding: 16,
                                 }}
                                 cover={
@@ -283,7 +277,7 @@ const RoomDetailPage = () => {
                                 <Text>🛠 {room.devices?.length || 0} thiết bị</Text><br />
                                 <Tag color="green" style={{ marginTop: 8 }}>{room.activity}</Tag>
                                 <div style={{ marginTop: 12 }}>
-                                  <Button type="primary" block onClick={() => navigate(`/room/${room._id}`)}>Đăng ký thuê</Button>
+                                  <Button type="primary" block>Đăng ký thuê</Button>
                                 </div>
                               </Card>
                             </Link>
